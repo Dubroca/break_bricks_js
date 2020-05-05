@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Casse briques Dubroca Mathieu</title>
+	<h2><center>  CASSE BRIQUES PARADISIAQUE</center></h2>
+    <style>
+    	* { padding: 0; margin: 0; }
+    	canvas { background-image:url("images/beach.jpg");  display: block; margin: 0 auto; }
+		
+    </style>
+</head>
+  
+<canvas id="myCanvas" width="800" height="600"></canvas>
+
+<script>
+	var canvas = document.getElementById("myCanvas"); //Définitions de l'ensemble des variables du jeu
+	var ctx = canvas.getContext("2d");
+	var ballRadius = 10;
+	var x = canvas.width/2;
+	var y = canvas.height-30;
+	var dx = 2;
+	var dy = -2;
+	var paddleHeight = 10;
+	var paddleWidth = 80;
+	var paddleX = (canvas.width-paddleWidth)/2;
+	var rightPressed = false;
+	var leftPressed = false;	
+	var brickRowCount = 5;
+	var brickColumnCount = 10;
+	var brickWidth = 80;
+	var brickHeight = 20;
+	var brickPadding = 1;
+	var brickOffsetTop = 30;
+	var brickOffsetLeft = 1;
+	var score = 0;
+	var lives = 3;
+
+var bricks = [];
+for(var c=0; c<brickColumnCount; c++) {
+  bricks[c] = [];
+  for(var r=0; r<brickRowCount; r++) {
+    bricks[c][r] = { x: 0, y: 0, status: 1 };
+  }
+}
+
+document.addEventListener("keydown", keyDownHandler, false);  //Listeners pour écouter le clavier, touche enfoncée
+document.addEventListener("keyup", keyUpHandler, false); //Touche relachée
+document.addEventListener("mousemove", mouseMoveHandler, false); //Listener pour écouter le clavier
+
+
+function keyDownHandler(e) { 
+    if(e.keyCode == 39) { //Quand on presse une touche du clavier, l'information est gardée dans une variable
+        rightPressed = true; //La variable est mise sur true
+    }
+    else if(e.keyCode == 37) {
+        leftPressed = true;
+    }
+}
+function keyUpHandler(e) {
+    if(e.keyCode == 39) {
+        rightPressed = false; //Quand la touche est relachée, la variable revient à  false
+    }
+    else if(e.keyCode == 37) {
+        leftPressed = false;
+    }
+}
+function mouseMoveHandler(e) {
+  var relativeX = e.clientX - canvas.offsetLeft;
+  if(relativeX > 0 && relativeX < canvas.width) {
+    paddleX = relativeX - paddleWidth/2;
+  }
+}
+
+function collisionDetection() {  //Détection de la collision avec les briques
+  for(var c=0; c<brickColumnCount; c++) {
+    for(var r=0; r<brickRowCount; r++) {
+      var b = bricks[c][r];
+      if(b.status == 1) {
+        if(x > b.x && x < b.x+brickWidth && y > b.y && y < b.y+brickHeight) {
+          dy = -dy;
+          b.status = 0;
+          score++;
+		  var audio = new Audio('bruit.mp3');
+		   audio.play();
+          if(score == brickRowCount*brickColumnCount) {
+            alert("Tu as gagné, félicitations mec !");
+            document.location.reload();
+          }
+        }
+      }
+    }
+  }
+}
+
+function drawBall() { //Fonction pour dessiner la balle
+    ctx.beginPath();
+    ctx.arc(x, y, ballRadius, 0, Math.PI*2);
+    ctx.fillStyle = "#FFFF00";
+    ctx.fill();
+    ctx.closePath();
+}
+function drawPaddle() { //Fonction pour dessiner la raquette
+    ctx.beginPath();
+    ctx.rect(paddleX, canvas.height-paddleHeight, paddleWidth, paddleHeight);
+    ctx.fillStyle = "#0095DD";
+    ctx.fill();
+    ctx.closePath();
+}
+function drawBricks() { //Fonction pour dessiner les briques du jeu
+    for(var c=0; c<brickColumnCount; c++) {
+        for(var r=0; r<brickRowCount; r++) {
+		if(bricks[c][r].status == 1) {
+            var brickX = (c*(brickWidth+brickPadding))+brickOffsetLeft;
+            var brickY = (r*(brickHeight+brickPadding))+brickOffsetTop;
+            bricks[c][r].x = brickX;
+            bricks[c][r].y = brickY;
+            ctx.beginPath();
+            ctx.rect(brickX, brickY, brickWidth, brickHeight);
+            ctx.fillStyle = "#FF0000";
+            ctx.fill();
+            ctx.closePath();
+        }
+	  }
+    }
+ }
+
+function drawScore() {  //Fonction pour le score
+  ctx.font = "16px Arial";
+  ctx.fillStyle = "#000000";
+  ctx.fillText("Score : "+score, canvas.width-80, 20);
+}
+function drawLives() { //Fonction pour les vies
+  ctx.font = "16px Arial";
+  ctx.fillStyle = "#000000";
+  ctx.fillText("Vies : "+lives, 8, 20);
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawBricks();
+  drawBall();
+  drawPaddle();
+  drawScore();
+  drawLives();
+  collisionDetection();
+
+  if(x + dx > canvas.width-ballRadius || x + dx < ballRadius) { //Détection du bord  de la balle pour casser les briques
+    dx = -dx;
+  }
+  if(y + dy < ballRadius) {
+    dy = -dy; //bonne ligne
+  }
+  else if(y + dy > canvas.height - ballRadius) {
+    if(x > paddleX && x < paddleX + paddleWidth) {
+      dy = -dy;
+    }
+    else {
+      lives--;
+      if(!lives) {
+        alert("Vous avez perdu ! Mais vous pouvez bien évidemment rejouer ;)");
+        document.location.reload();
+      }
+      else {
+        x = canvas.width/2;
+        y = canvas.height-30;
+        dx = 3;
+        dy = -3;
+        paddleX = (canvas.width-paddleWidth)/2;
+      }
+    }
+  }
+
+  if(rightPressed && paddleX < canvas.width-paddleWidth) {
+    paddleX += 7;
+  }
+  else if(leftPressed && paddleX > 0) {
+    paddleX -= 7;
+  }
+
+  x += dx;
+  y += dy;
+  requestAnimationFrame(draw);
+}
+draw();
+</script>
+<div>
+<center>Utilisez les flèches de votre clavier ou le curseur de la souris pour déplacer la raquette. Bon jeu ! (Et mettez le son ;))</center>
+</div>
+</html>
